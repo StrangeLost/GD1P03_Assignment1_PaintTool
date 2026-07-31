@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="GD1P03_Assignment1_PaintTool.vcxproj" />
+  <Project Path="GD1P03_Assignment1_PaintTool.vcxproj" Id="4d3ad765-8714-453c-97ae-aff1172d63e1" />
 </Solution>
