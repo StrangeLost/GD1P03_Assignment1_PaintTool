@@ -21,10 +21,36 @@
     <ClCompile Include="cPaint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cButton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cPaint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cButton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon_box_disabled_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_box_normal_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_box_pressed_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_pencil_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_box_hovered_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_box_toggled_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

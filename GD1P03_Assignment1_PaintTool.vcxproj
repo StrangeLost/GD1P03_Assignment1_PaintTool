@@ -145,11 +145,21 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cButton.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="cPaint.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cButton.h" />
     <ClInclude Include="cPaint.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon_box_disabled_32x32.png" />
+    <Image Include="icon_box_hovered_32x32.png" />
+    <Image Include="icon_box_normal_32x32.png" />
+    <Image Include="icon_box_pressed_32x32.png" />
+    <Image Include="icon_box_toggled_32x32.png" />
+    <Image Include="icon_pencil_32x32.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
