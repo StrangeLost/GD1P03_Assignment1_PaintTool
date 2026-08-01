@@ -146,10 +146,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Paint.cpp" />
+    <ClCompile Include="cPaint.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Paint.h" />
+    <ClInclude Include="cPaint.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
