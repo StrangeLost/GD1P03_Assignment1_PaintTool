@@ -36,13 +36,15 @@ enum class ButtonState
 class cButton
 {
 public:
+	cButton();
 	cButton(
 		sf::Vector2f position,
 		sf::Vector2f size,
 		std::array<const sf::Texture*, 5> backgroundTextures,
 		const sf::Texture& iconTexture,
 		bool isDisabled = false,
-		bool isToggleable = false
+		bool isToggleable = false,
+		std::function<void(cButton&)> onClickFunction = {}
 	);
 
 	void Update(sf::Vector2f& mousePosition);
@@ -50,9 +52,12 @@ public:
 
 	void HandleMousePressed(sf::Vector2f mousePosition);
 	void HandleMouseReleased(sf::Vector2f mousePosition);
-	void SetOnClick(std::function<void()> function);
+	void SetOnClick(std::function<void(cButton&)> function);
 
 	bool IsToggled() const;
+
+	inline void SetIsToggled(bool value) { m_isToggled = value; }
+	inline bool GetIsToggled() const { return m_isToggled; }
 
 private:
 	bool Contains(sf::Vector2f point) const;
@@ -64,7 +69,7 @@ private:
 	ButtonState m_state = ButtonState::Normal;
 
 	std::array<const sf::Texture*, 5> m_backgroundTextures;
-	std::function<void()> m_onClick;
+	std::function<void(cButton&)> m_onClick;
 
 	bool m_isDisabled = false;
 	bool m_isToggleable = false;

@@ -155,6 +155,8 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon_box_disabled_32x32.png" />
+    <Image Include="icon_box_empty_32x32.png" />
+    <Image Include="icon_box_fill_32x32.png" />
     <Image Include="icon_box_hovered_32x32.png" />
     <Image Include="icon_box_normal_32x32.png" />
     <Image Include="icon_box_pressed_32x32.png" />

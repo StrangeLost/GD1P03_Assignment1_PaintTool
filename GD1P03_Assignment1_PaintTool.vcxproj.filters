@@ -52,5 +52,11 @@
     <Image Include="icon_box_toggled_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="icon_box_empty_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_box_fill_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

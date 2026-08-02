@@ -13,13 +13,18 @@ Mail : rony.song@mds.ac.nz
 #include <SFML/Graphics/RenderTarget.hpp>
 #include "cButton.h"
 
+cButton::cButton()
+{
+}
+
 cButton::cButton(
 	sf::Vector2f position,
 	sf::Vector2f size,
 	std::array<const sf::Texture*, 5> backgroundTextures,
 	const sf::Texture& iconTexture,
 	bool isDisabled,
-	bool isToggleable
+	bool isToggleable,
+	std::function<void(cButton&)> onClickFunction
 )
 	: m_backgroundTextures(backgroundTextures),
 	  m_isDisabled(isDisabled),
@@ -32,6 +37,8 @@ cButton::cButton(
 	m_icon.setPosition(position);
 	m_icon.setSize(size);
 	m_icon.setTexture(&iconTexture, true);
+
+	SetOnClick(onClickFunction);
 }
 
 void cButton::Update(sf::Vector2f& mousePosition)
@@ -96,14 +103,14 @@ void cButton::HandleMouseReleased(sf::Vector2f mousePosition)
 
 	if (m_isToggleable)
 	{
-		m_isToggled = !m_isToggled;
+		m_isToggled = true;
 	}
 
 	if (m_onClick)
-		m_onClick();
+		m_onClick(*this);
 }
 
-void cButton::SetOnClick(std::function<void()> function)
+void cButton::SetOnClick(std::function<void(cButton&)> function)
 {
 	m_onClick = std::move(function);
 }
