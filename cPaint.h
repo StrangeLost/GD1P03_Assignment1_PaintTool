@@ -38,17 +38,26 @@ private:
 	// Updates Handling
 	void UpdateMousePosition();
 	void UpdateButtons();
+	void UpdateToolUse();
 
 	// Draws handling
 	void DrawButtons();
-	void DrawStroke(sf::Vector2f from, sf::Vector2f to);
 
 	// Helper Functions
 	void SwitchTool(cButton& toolButton);
 	sf::Vector2f WorldToCanvas(sf::Vector2f worldPosition) const;
 	bool IsInsideCanvas(sf::Vector2f worldPosition) const;
 	bool IsActiveButton(cButton& button) const;
-	void StampBrush(sf::Vector2f canvasPosition);
+
+	// Spawn Drawing Tools
+	void SpawnLineTool();
+	void SpawnBoxFillTool();
+	void SpawnBoxEmptyTool();
+
+	// Use Drawing Tools
+	void UseLineTool();
+	void UseBoxFillTool();
+	void UseBoxEmptyTool();
 	
 	// Window
 	sf::RenderWindow m_window;
@@ -56,14 +65,17 @@ private:
 
 	// Canvas
 	sf::RenderTexture m_canvas;
+	sf::RenderTexture m_tempCanvas;
 	sf::RectangleShape m_canvasDisplay;
+	sf::RectangleShape m_tempCanvasDisplay;
 	sf::Vector2f m_canvasPosition;
 	sf::Vector2f m_canvasSize;
 
 	// Drawing Brush
 	bool m_isDrawing = false;
 	float m_brushRadius = 8.f;
-	sf::Vector2f m_previousDrawPosition;
+	sf::Shape* m_brushShape = nullptr;
+	sf::Vector2f m_startDrawPosition;
 	sf::Color m_brushColor = sf::Color::Black;
 
 	// Button base textures
@@ -75,14 +87,14 @@ private:
 	std::array<const sf::Texture*, 5> m_backgroundTextures;
 
 	// Button icon textures
-	sf::Texture m_pencilTexture;
+	sf::Texture m_lineTexture;
 	sf::Texture m_boxFillTexture;
 	sf::Texture m_boxEmptyTexture;
 
 	// Button base textures
 	std::vector<cButton*> m_buttons;
 	cButton* m_activeButton;
-	cButton m_pencilButton;
+	cButton m_lineButton;
 	cButton m_boxFillButton;
 	cButton m_boxEmptyButton;
 };

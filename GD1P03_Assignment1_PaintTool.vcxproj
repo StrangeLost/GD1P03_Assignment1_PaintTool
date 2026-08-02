@@ -161,7 +161,7 @@
     <Image Include="icon_box_normal_32x32.png" />
     <Image Include="icon_box_pressed_32x32.png" />
     <Image Include="icon_box_toggled_32x32.png" />
-    <Image Include="icon_pencil_32x32.png" />
+    <Image Include="icon_line_32x32.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

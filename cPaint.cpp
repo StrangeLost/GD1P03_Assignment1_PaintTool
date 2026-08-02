@@ -15,8 +15,9 @@ Mail : rony.song@mds.ac.nz
 cPaint::cPaint()
 	// Initialize the software window
 	: m_window(sf::VideoMode({ 1280, 720 }), "Painter"),
+	  m_canvas({1232, 600}),
+	  m_tempCanvas({1232, 600}),
 	  m_activeButton(nullptr),
-	  m_canvas({1232u, 600u}),
 
 	// Load the base button textures
 	m_normalButtonTexture("icon_box_normal_32x32.png"),
@@ -35,16 +36,16 @@ cPaint::cPaint()
 	},
 
 	// Load the icon button textures
-	m_pencilTexture("icon_pencil_32x32.png"),
+	m_lineTexture("icon_line_32x32.png"),
 	m_boxFillTexture("icon_box_fill_32x32.png"),
 	m_boxEmptyTexture("icon_box_empty_32x32.png"),
 
 	// Initialize all buttons
-	m_pencilButton(
+	m_lineButton(
 		{ 8.f, 8.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
-		m_pencilTexture,		// Button box icon
+		m_lineTexture,				// Button box icon
 		false,						// Button isDisabled
 		true,						// Button isToggleable
 		[this](cButton& button)		// Button onClick
@@ -82,7 +83,7 @@ cPaint::cPaint()
 	// Store all the buttons into m_buttons
 	m_buttons =
 	{
-		&m_pencilButton,
+		&m_lineButton,
 		&m_boxFillButton,
 		&m_boxEmptyButton
 	};
@@ -94,9 +95,16 @@ cPaint::cPaint()
 	m_canvas.clear(sf::Color::White);
 	m_canvas.display();
 
+	m_tempCanvas.clear(sf::Color::Transparent);
+	m_tempCanvas.display();
+
 	m_canvasDisplay.setPosition(m_canvasPosition);
 	m_canvasDisplay.setSize(m_canvasSize);
 	m_canvasDisplay.setTexture(&m_canvas.getTexture(), true);
+
+	m_tempCanvasDisplay.setPosition(m_canvasPosition);
+	m_tempCanvasDisplay.setSize(m_canvasSize);
+	m_tempCanvasDisplay.setTexture(&m_tempCanvas.getTexture(), true);
 }
 
 void cPaint::Run()
@@ -133,30 +141,25 @@ void cPaint::Update(float deltaTime)
 {
 	UpdateMousePosition();
 	UpdateButtons();
-
-	// Check brush stroke
-	if (m_isDrawing)
-	{
-		const sf::Vector2f currentPosition = WorldToCanvas(m_mousePosition);
-
-		DrawStroke(
-			m_previousDrawPosition,
-			currentPosition
-		);
-
-		m_previousDrawPosition = currentPosition;
-
-		m_canvas.display();
-	}
+	UpdateToolUse();
 }
 
 void cPaint::Draw()
 {
-	m_window.clear();
+	m_window.clear(sf::Color(0x2E1F9EFF));
+	m_tempCanvas.clear(sf::Color::Transparent);
 
-	// Draw processes here...
-	m_window.draw(m_canvasDisplay);
-	DrawButtons();
+	// Temporary Drawing
+	if (m_isDrawing && m_brushShape != nullptr)
+	{
+		m_tempCanvas.draw(*m_brushShape);
+	}
+
+	m_tempCanvas.display();
+
+	m_window.draw(m_canvasDisplay);		// Permanent Draw
+	m_window.draw(m_tempCanvasDisplay); // Temporary Draw
+	DrawButtons();								// UI on top
 
 	m_window.display();
 }
@@ -212,14 +215,25 @@ void cPaint::HandleToolInput(const sf::Event& event)
 			if (m_activeButton == nullptr)
 				return;
 
-			const sf::Vector2f worldPosition = m_window.mapPixelToCoords(pressed->position);
-
 			m_isDrawing = true;
-			m_previousDrawPosition = WorldToCanvas(worldPosition);
+			m_startDrawPosition = WorldToCanvas(m_mousePosition);
 
-			StampBrush(m_previousDrawPosition);
-			m_canvas.display();
-			
+			if (m_activeButton == &m_lineButton)
+			{
+				
+			}
+
+			if (m_activeButton == &m_boxFillButton)
+			{
+				m_brushShape = new sf::RectangleShape(
+					{ 0.f, 0.f }
+				);
+			}
+
+			if (m_activeButton == &m_boxEmptyButton)
+			{
+
+			}
 		}
 	}
 
@@ -227,7 +241,15 @@ void cPaint::HandleToolInput(const sf::Event& event)
 	{
 		if (released->button == sf::Mouse::Button::Left)
 		{
+			if (m_brushShape != nullptr)
+			{
+				m_canvas.draw(*m_brushShape);
+				m_canvas.display();
+			}
+
 			m_isDrawing = false;
+			delete m_brushShape;
+			m_brushShape = nullptr;
 		}
 	}
 }
@@ -247,42 +269,26 @@ void cPaint::UpdateButtons()
 	}
 }
 
+void cPaint::UpdateToolUse()
+{
+	if (m_activeButton == nullptr || !m_isDrawing || m_brushShape == nullptr)
+		return;
+	
+	if (m_activeButton == &m_lineButton)
+		UseLineTool();
+
+	if (m_activeButton == &m_boxFillButton)
+		UseBoxFillTool();
+
+	if (m_activeButton == &m_boxEmptyButton)
+		UseBoxEmptyTool();
+}
+
 void cPaint::DrawButtons()
 {
 	for (const cButton* button : m_buttons)
 	{
 		button->Draw(m_window);
-	}
-}
-
-void cPaint::DrawStroke(sf::Vector2f from, sf::Vector2f to)
-{
-	if (m_activeButton == nullptr || !m_isDrawing)
-		return;
-
-	const sf::Vector2f difference = to - from;
-
-	const float distance = std::sqrt(
-		difference.x * difference.x +
-		difference.y * difference.y
-	);
-
-	const float spacing = std::max(1.f, m_brushRadius * 0.5f);
-	const int steps = std::max(
-		1,
-		static_cast<int>(std::ceil(distance / spacing))
-	);
-
-	for (int i = 1; i <= steps; ++i)
-	{
-		const float amount =
-			static_cast<float>(i) /
-			static_cast<float>(steps);
-
-		const sf::Vector2f position =
-			from + difference * amount;
-
-		StampBrush(position);
 	}
 }
 
@@ -315,18 +321,40 @@ bool cPaint::IsActiveButton(cButton& button) const
 	return m_activeButton == &button;
 }
 
-void cPaint::StampBrush(sf::Vector2f canvasPosition)
+void cPaint::SpawnLineTool()
 {
-	sf::CircleShape brush(m_brushRadius);
 
-	brush.setOrigin({
-		m_brushRadius,
-		m_brushRadius
-	});
+}
 
-	brush.setPosition(canvasPosition);
-	brush.setFillColor(m_brushColor);
+void cPaint::SpawnBoxFillTool()
+{
+	m_brushShape = new sf::RectangleShape();
+}
 
-	m_canvas.draw(brush);
+void cPaint::SpawnBoxEmptyTool()
+{
+
+}
+
+void cPaint::UseLineTool()
+{
+	
+}
+
+void cPaint::UseBoxFillTool()
+{
+	if (auto* boxFill = dynamic_cast<sf::RectangleShape*>(m_brushShape))
+	{
+		const sf::Vector2f boxWidth = WorldToCanvas(m_mousePosition) - m_startDrawPosition;
+
+		boxFill->setPosition(m_startDrawPosition);
+		boxFill->setSize(boxWidth);
+		boxFill->setFillColor(m_brushColor);
+	}
+}
+
+void cPaint::UseBoxEmptyTool()
+{
+
 }
 

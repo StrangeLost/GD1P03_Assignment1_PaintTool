@@ -43,9 +43,6 @@
     <Image Include="icon_box_pressed_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="icon_pencil_32x32.png">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="icon_box_hovered_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
@@ -56,6 +53,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="icon_box_fill_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_line_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
