@@ -62,9 +62,13 @@ private:
 	void UseEllipseFillTool();
 	void UsePolygonTool();
 
+	// Use Stamp Tool
+	void LoadStampImage(const std::filesystem::path& filePath);
+	void PlaceStamp();
+
 	// Save & Load images
-	bool SaveCanvas(const std::filesystem::path& filePath);
-	bool LoadCanvas(const std::filesystem::path& filePath);
+	void SaveCanvas(const std::filesystem::path& filePath);
+	void LoadCanvas(const std::filesystem::path& filePath);
 	
 	// Window
 	sf::RenderWindow m_window;
@@ -92,6 +96,11 @@ private:
 	sf::VertexArray m_polygonVertex;
 	sf::ConvexShape m_polygon;
 
+	// Stamp specific
+	sf::Texture m_stampImage;
+	bool m_hasStampImage = false;
+	float m_stampScale = 1.f;
+
 	// Button base textures
 	sf::Texture m_normalButtonTexture;
 	sf::Texture m_hoveredButtonTexture;
@@ -105,6 +114,7 @@ private:
 	sf::Texture m_boxFillTexture;
 	sf::Texture m_ellipseFillTexture;
 	sf::Texture m_polygonTexture;
+	sf::Texture m_stampTexture;
 	sf::Texture m_saveTexture;
 	sf::Texture m_loadTexture;
 
@@ -115,6 +125,7 @@ private:
 	cButton m_boxFillButton;
 	cButton m_ellipseFillButton;
 	cButton m_polygonButton;
+	cButton m_stampButton;
 	cButton m_saveButton;
 	cButton m_loadButton;
 

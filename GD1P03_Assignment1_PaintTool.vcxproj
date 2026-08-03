@@ -187,6 +187,7 @@
     <Image Include="icon_load_32x32.png" />
     <Image Include="icon_polygon_32x32.png" />
     <Image Include="icon_save_32x32.png" />
+    <Image Include="icon_stamp_32x32.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="Roboto.ttf" />

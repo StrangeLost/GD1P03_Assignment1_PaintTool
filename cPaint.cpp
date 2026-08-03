@@ -44,6 +44,7 @@ cPaint::cPaint()
 	m_boxFillTexture("icon_box_fill_32x32.png"),
 	m_ellipseFillTexture("icon_ellipse_fill_32x32.png"),
 	m_polygonTexture("icon_polygon_32x32.png"),
+	m_stampTexture("icon_stamp_32x32.png"),
 	m_saveTexture("icon_save_32x32.png"),
 	m_loadTexture("icon_load_32x32.png"),
 
@@ -97,6 +98,32 @@ cPaint::cPaint()
 		[this](cButton& button)		// Button onClick
 		{
 			SwitchTool(button);
+		}
+	),
+
+	m_stampButton(
+		{ 144.f, 8.f },				// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_stampTexture,				// Button box icon
+		false,						// Button isDisabled
+		true,						// Button isToggleable
+		[this](cButton& button)		// Button onClick
+		{
+			SwitchTool(button);
+
+			std::vector<std::string> loadPath = pfd::open_file(
+				"Open image", ".",
+				{ "Image files", "*.png *.jpg *.jpeg *.bmp *.tga" },
+				pfd::opt::none
+			).result();
+
+			if (!loadPath.empty())
+			{
+				std::filesystem::path filePath = loadPath.front();
+
+				LoadStampImage(filePath);
+			}
 		}
 	),
 
@@ -168,6 +195,7 @@ cPaint::cPaint()
 		&m_boxFillButton,
 		&m_ellipseFillButton,
 		&m_polygonButton,
+		&m_stampButton,
 		&m_saveButton,
 		&m_loadButton
 	};
@@ -257,6 +285,31 @@ void cPaint::Draw()
 	if (m_isPolygoning)
 	{
 		m_tempCanvas.draw(m_polygonVertex);
+	}
+
+	// Specifically for stamp stuff
+	if (m_activeButton == &m_stampButton &&
+		m_hasStampImage &&
+		IsInsideCanvas(m_mousePosition))
+	{
+		sf::Sprite stampSprite(m_stampImage);
+
+		const sf::Vector2u imageSize = m_stampImage.getSize();
+
+		const sf::Vector2f scaledSize{
+			static_cast<float>(imageSize.x) * m_stampScale,
+			static_cast<float>(imageSize.y) * m_stampScale
+		};
+
+		sf::Vector2f position =
+			WorldToCanvas(m_mousePosition) - scaledSize / 2.f;
+
+		stampSprite.setPosition(position);
+
+		stampSprite.setScale({ m_stampScale, m_stampScale });
+
+		// Preview on the temporary canvas.
+		m_tempCanvas.draw(stampSprite);
 	}
 
 	m_tempCanvas.display();
@@ -349,6 +402,12 @@ void cPaint::HandleToolInput(const sf::Event& event)
 
 				m_isPolygoning = true;
 				m_polygonPoints.push_back(canvasPosition);
+			}
+
+			if (m_activeButton == &m_stampButton)
+			{
+				PlaceStamp();
+				return;
 			}
 		}
 	}
@@ -449,7 +508,15 @@ void cPaint::UpdateButtons()
 void cPaint::UpdateToolUse()
 {
 	if (m_isPolygoning)
+	{
 		UsePolygonTool();
+		return;
+	}
+
+	if (m_hasStampImage)
+	{
+		return;
+	}
 
 	if (m_activeButton == nullptr || !m_isDrawing || m_brushShape == nullptr)
 		return;
@@ -497,16 +564,15 @@ void cPaint::DrawTextBoxes()
 {
 	for (cTextBox* textBox : m_textBoxes)
 	{
-		if (m_activeButton == nullptr			||
-			m_activeButton == &m_boxFillButton	||
-			m_activeButton == &m_polygonButton)
+		if (m_activeButton == &m_lineButton ||
+			m_activeButton == &m_ellipseFillButton)
 		{
-			textBox->Hide();
+			textBox->Show();
+			textBox->Draw(m_window);
 			return;
 		}
 
-		textBox->Show();
-		textBox->Draw(m_window);
+		textBox->Hide();
 	}
 }
 
@@ -516,6 +582,7 @@ void cPaint::SwitchTool(cButton& toolButton)
 		return;
 
 	m_isPolygoning = false;
+	m_hasStampImage = false;
 	m_polygonVertex.clear();
 	m_polygonPoints.clear();
 
@@ -570,11 +637,6 @@ void cPaint::FinishPolygon()
 
 	m_polygonVertex.clear();
 	m_polygon.setPointCount(m_polygonPoints.size());
-
-	//for (const sf::Vector2f& point : m_polygonPoints)
-	//{
-	//	m_polygonVertex.append({ point, m_brushColor });
-	//}
 
 	for (std::size_t i = 0; i < m_polygonPoints.size(); ++i)
 	{
@@ -670,32 +732,74 @@ void cPaint::UsePolygonTool()
 		m_polygonVertex.append({
 			WorldToCanvas(m_mousePosition),
 			m_brushColor
-			});
+		});
 	}
 }
 
-bool cPaint::SaveCanvas(const std::filesystem::path& filePath)
+void cPaint::LoadStampImage(const std::filesystem::path& filePath)
+{
+	if (!m_stampImage.loadFromFile(filePath))
+	{
+		m_hasStampImage = false;
+		return;
+	}
+
+	const sf::Vector2 imageSize = m_stampImage.getSize();
+
+	const float widthScale =
+		m_canvasSize.x / static_cast<float>(imageSize.x);
+
+	const float heightScale =
+		m_canvasSize.y / static_cast<float>(imageSize.y);
+
+	m_stampScale = std::min({ 1.f, widthScale, heightScale });
+	m_hasStampImage = true;
+}
+
+void cPaint::PlaceStamp()
+{
+	if (!m_hasStampImage || !IsInsideCanvas(m_mousePosition))
+		return;
+
+	sf::Sprite stampSprite(m_stampImage);
+
+	const sf::Vector2u imageSize = m_stampImage.getSize();
+
+	const sf::Vector2f scaledSize{
+		static_cast<float>(imageSize.x) * m_stampScale,
+		static_cast<float>(imageSize.y) * m_stampScale
+	};
+
+	sf::Vector2f position =
+		WorldToCanvas(m_mousePosition) - scaledSize / 2.f;
+
+	stampSprite.setPosition(position);
+	stampSprite.setScale({ m_stampScale, m_stampScale });
+
+	m_canvas.draw(stampSprite);
+	m_canvas.display();
+}
+
+void cPaint::SaveCanvas(const std::filesystem::path& filePath)
 {
 	m_canvas.display();
 
 	const sf::Image image = m_canvas.getTexture().copyToImage();
 
-	return image.saveToFile(filePath);
+	image.saveToFile(filePath);
 }
 
-bool cPaint::LoadCanvas(const std::filesystem::path& filePath)
+void cPaint::LoadCanvas(const std::filesystem::path& filePath)
 {
 	sf::Texture loadedTexture;
 
 	if (!loadedTexture.loadFromFile(filePath))
-		return false;
+		return;
 
 	sf::Sprite loadedSprite(loadedTexture);
 
 	m_canvas.clear(sf::Color::White);
 	m_canvas.draw(loadedSprite);
 	m_canvas.display();
-
-	return true;
 }
 
