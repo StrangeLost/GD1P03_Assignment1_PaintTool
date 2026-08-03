@@ -11,11 +11,8 @@ Mail : rony.song@mds.ac.nz
 **************************************************************************/
 
 #pragma once
-#include <vector>
-#include <optional>
-#include <cstdio>
-#include <SFML/Graphics.hpp>
 #include "cButton.h"
+#include "cTextBox.h"
 
 class cPaint
 {
@@ -34,14 +31,18 @@ private:
 	void HandleWindowResize(const sf::Event& event);
 	void HandleButtonInput(const sf::Event& event);
 	void HandleToolInput(const sf::Event& event);
+	void HandleTextBoxes(const sf::Event& event);
+	void HandleTextInput(const sf::Event& event);
 
 	// Updates Handling
 	void UpdateMousePosition();
 	void UpdateButtons();
 	void UpdateToolUse();
+	void UpdateTextBoxes();
 
 	// Draws handling
 	void DrawButtons();
+	void DrawTextBoxes();
 
 	// Helper Functions
 	void SwitchTool(cButton& toolButton);
@@ -97,5 +98,11 @@ private:
 	cButton m_lineButton;
 	cButton m_boxFillButton;
 	cButton m_boxEmptyButton;
+
+	// Text boxes
+	sf::Font m_font;
+	std::vector<cTextBox*> m_textBoxes;
+	cTextBox* m_activeTextBox;
+	cTextBox m_brushTextBox;
 };
 

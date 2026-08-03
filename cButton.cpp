@@ -13,10 +13,6 @@ Mail : rony.song@mds.ac.nz
 #include <SFML/Graphics/RenderTarget.hpp>
 #include "cButton.h"
 
-cButton::cButton()
-{
-}
-
 cButton::cButton(
 	sf::Vector2f position,
 	sf::Vector2f size,

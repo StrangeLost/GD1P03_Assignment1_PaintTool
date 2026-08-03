@@ -36,7 +36,6 @@ enum class ButtonState
 class cButton
 {
 public:
-	cButton();
 	cButton(
 		sf::Vector2f position,
 		sf::Vector2f size,

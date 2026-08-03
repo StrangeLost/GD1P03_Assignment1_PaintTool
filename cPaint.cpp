@@ -13,11 +13,12 @@ Mail : rony.song@mds.ac.nz
 #include "cPaint.h"
 
 cPaint::cPaint()
-	// Initialize the software window
+// Initialize the software window
 	: m_window(sf::VideoMode({ 1280, 720 }), "Painter"),
-	  m_canvas({1232, 600}),
-	  m_tempCanvas({1232, 600}),
-	  m_activeButton(nullptr),
+	m_canvas({ 1232, 600 }),
+	m_tempCanvas({ 1232, 600 }),
+	m_activeButton(nullptr),
+	m_activeTextBox(nullptr),
 
 	// Load the base button textures
 	m_normalButtonTexture("icon_box_normal_32x32.png"),
@@ -25,7 +26,7 @@ cPaint::cPaint()
 	m_pressedButtonTexture("icon_box_pressed_32x32.png"),
 	m_disabledButtonTexture("icon_box_disabled_32x32.png"),
 	m_toggledButtonTexture("icon_box_toggled_32x32.png"),
-	
+
 	// Store them in one array to reduce repetition
 	m_backgroundTextures{
 		&m_normalButtonTexture,
@@ -78,6 +79,18 @@ cPaint::cPaint()
 		{
 			SwitchTool(button);
 		}
+	),
+
+	// Initialize all textBoxes
+	m_font("Roboto.ttf"),
+	m_brushTextBox(
+		m_font,				// Text Font
+		{ 8.f, 42.f },		// TextBox Position
+		{ 32.f, 32.f },		// TextBox Size
+		3,					// Text Limit
+		16,					// Font Size 
+		sf::Color::Black,	// Font Color
+		std::to_string(static_cast<int>(m_brushRadius))
 	)
 {
 	// Store all the buttons into m_buttons
@@ -85,7 +98,13 @@ cPaint::cPaint()
 	{
 		&m_lineButton,
 		&m_boxFillButton,
-		&m_boxEmptyButton
+		&m_boxEmptyButton,
+	};
+
+	// Store all the textboxes into m_textBoxes
+	m_textBoxes =
+	{
+		&m_brushTextBox,
 	};
 
 	// Initialise the canvas
@@ -134,6 +153,8 @@ void cPaint::HandleEvents()
 		HandleWindowResize(*event);
 		HandleButtonInput(*event);
 		HandleToolInput(*event);
+		HandleTextBoxes(*event);
+		HandleTextInput(*event);
 	}
 }
 
@@ -142,6 +163,7 @@ void cPaint::Update(float deltaTime)
 	UpdateMousePosition();
 	UpdateButtons();
 	UpdateToolUse();
+	UpdateTextBoxes();
 }
 
 void cPaint::Draw()
@@ -149,7 +171,7 @@ void cPaint::Draw()
 	m_window.clear(sf::Color(0x2E1F9EFF));
 	m_tempCanvas.clear(sf::Color::Transparent);
 
-	// Temporary Drawing
+	// Temporary Drawing if there's shape to draw
 	if (m_isDrawing && m_brushShape != nullptr)
 	{
 		m_tempCanvas.draw(*m_brushShape);
@@ -159,7 +181,8 @@ void cPaint::Draw()
 
 	m_window.draw(m_canvasDisplay);		// Permanent Draw
 	m_window.draw(m_tempCanvasDisplay); // Temporary Draw
-	DrawButtons();								// UI on top
+	DrawButtons();
+	DrawTextBoxes();
 
 	m_window.display();
 }
@@ -185,6 +208,7 @@ void cPaint::HandleButtonInput(const sf::Event& event)
 {
 	if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
 	{
+		// On Mouse Left Button Press
 		if (pressed->button == sf::Mouse::Button::Left)
 		{
 			for (cButton* button : m_buttons)
@@ -196,6 +220,7 @@ void cPaint::HandleButtonInput(const sf::Event& event)
 
 	if (const auto* released = event.getIf<sf::Event::MouseButtonReleased>())
 	{
+		// On Mouse Left Button Release
 		if (released->button == sf::Mouse::Button::Left)
 		{
 			for (cButton* button : m_buttons)
@@ -254,6 +279,42 @@ void cPaint::HandleToolInput(const sf::Event& event)
 	}
 }
 
+void cPaint::HandleTextBoxes(const sf::Event& event)
+{
+	if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (pressed->button == sf::Mouse::Button::Left)
+		{
+			for (cTextBox* textBox : m_textBoxes)
+			{
+				if (textBox->IsSelected(m_mousePosition))
+				{
+					textBox->SelectTextBox();
+					m_activeTextBox = textBox;
+					return;
+				}
+			}
+		}
+
+		if (m_activeTextBox != nullptr)
+		{
+			m_activeTextBox->DeselectTextBox();
+			m_activeTextBox = nullptr;
+		}
+	}
+}
+
+void cPaint::HandleTextInput(const sf::Event& event)
+{
+	if (const auto* typedCharacter = event.getIf<sf::Event::TextEntered>())
+	{
+		if (m_activeTextBox == nullptr)
+			return;
+
+		m_activeTextBox->HandleInput(*typedCharacter);
+	}
+}
+
 void cPaint::UpdateMousePosition()
 {
 	const sf::Vector2i pixelPosition = sf::Mouse::getPosition(m_window);
@@ -284,11 +345,27 @@ void cPaint::UpdateToolUse()
 		UseBoxEmptyTool();
 }
 
+void cPaint::UpdateTextBoxes()
+{
+	for (cTextBox* textBox : m_textBoxes)
+	{
+		textBox->Update();
+	}
+}
+
 void cPaint::DrawButtons()
 {
 	for (const cButton* button : m_buttons)
 	{
 		button->Draw(m_window);
+	}
+}
+
+void cPaint::DrawTextBoxes()
+{
+	for (const cTextBox* textBox : m_textBoxes)
+	{
+		textBox->Draw(m_window);
 	}
 }
 

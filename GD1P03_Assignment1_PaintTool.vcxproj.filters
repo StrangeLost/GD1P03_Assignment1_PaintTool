@@ -24,12 +24,18 @@
     <ClCompile Include="cButton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cTextBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cPaint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cButton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cTextBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -58,5 +64,10 @@
     <Image Include="icon_line_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="Roboto.ttf">
+      <Filter>Resource Files</Filter>
+    </Font>
   </ItemGroup>
 </Project>
