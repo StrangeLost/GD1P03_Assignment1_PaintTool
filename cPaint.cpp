@@ -11,6 +11,7 @@ Mail : rony.song@mds.ac.nz
 **************************************************************************/
 
 #include "cPaint.h"
+#include <cmath>
 
 cPaint::cPaint()
 // Initialize the software window
@@ -244,21 +245,13 @@ void cPaint::HandleToolInput(const sf::Event& event)
 			m_startDrawPosition = WorldToCanvas(m_mousePosition);
 
 			if (m_activeButton == &m_lineButton)
-			{
-				
-			}
+				m_brushShape = new sf::RectangleShape({ 0.f, 0.f });
 
 			if (m_activeButton == &m_boxFillButton)
-			{
-				m_brushShape = new sf::RectangleShape(
-					{ 0.f, 0.f }
-				);
-			}
+				m_brushShape = new sf::RectangleShape({ 0.f, 0.f });
 
 			if (m_activeButton == &m_boxEmptyButton)
-			{
-
-			}
+				return;
 		}
 	}
 
@@ -298,8 +291,16 @@ void cPaint::HandleTextBoxes(const sf::Event& event)
 
 		if (m_activeTextBox != nullptr)
 		{
-			m_activeTextBox->DeselectTextBox();
-			m_activeTextBox = nullptr;
+			SubmitTextValue();
+		}
+	}
+
+	if (const auto* pressed = event.getIf<sf::Event::KeyPressed>())
+	{
+		if (pressed->code == sf::Keyboard::Key::Enter ||
+			pressed->code == sf::Keyboard::Key::Escape)
+		{
+			SubmitTextValue();
 		}
 	}
 }
@@ -363,6 +364,9 @@ void cPaint::DrawButtons()
 
 void cPaint::DrawTextBoxes()
 {
+	if (m_activeButton == nullptr)
+		return;
+
 	for (const cTextBox* textBox : m_textBoxes)
 	{
 		textBox->Draw(m_window);
@@ -398,24 +402,39 @@ bool cPaint::IsActiveButton(cButton& button) const
 	return m_activeButton == &button;
 }
 
-void cPaint::SpawnLineTool()
+void cPaint::SubmitTextValue()
 {
+	if (m_activeTextBox == nullptr)
+		return;
 
-}
-
-void cPaint::SpawnBoxFillTool()
-{
-	m_brushShape = new sf::RectangleShape();
-}
-
-void cPaint::SpawnBoxEmptyTool()
-{
-
+	m_activeTextBox->DeselectTextBox();
+	m_brushRadius = m_activeTextBox->GetValue();
+	m_activeTextBox = nullptr;
 }
 
 void cPaint::UseLineTool()
 {
-	
+	if (auto* line = dynamic_cast<sf::RectangleShape*>(m_brushShape))
+	{
+		const sf::Vector2f mousePosition = WorldToCanvas(m_mousePosition);
+		const sf::Vector2f direction = mousePosition - m_startDrawPosition;
+
+		const float length = std::hypot(
+			direction.x,
+			direction.y
+		);
+
+		const float angle = std::atan2(
+			direction.y,
+			direction.x
+		);
+
+		line->setPosition(m_startDrawPosition);
+		line->setSize({ length, m_brushRadius });
+		line->setOrigin({ 0.f, m_brushRadius / 2.f });
+		line->setRotation(sf::radians(angle));
+		line->setFillColor(m_brushColor);
+	}
 }
 
 void cPaint::UseBoxFillTool()

@@ -1,3 +1,15 @@
+/***********************************************************************
+Bachelor of Software Engineering
+Media Design School
+Auckland
+New Zealand
+(c) 2026 Media Design School
+File Name : cTextBox.h
+Description : This class helps with changing the brush size
+Author : Rony Day Song
+Mail : rony.song@mds.ac.nz
+**************************************************************************/
+
 #pragma once
 #include <iostream>
 #include <SFML/Graphics.hpp>
@@ -27,6 +39,9 @@ public:
 		
 	inline void SetSelected(bool value) { m_isSelected = value; }
 	inline bool GetSelected() const { return m_isSelected; }
+
+	inline void SetValue(sf::String value) { m_value = value; }
+	inline float GetValue() { return std::stof(m_value.toAnsiString()); }
 
 private:
 	void RefreshDisplay();

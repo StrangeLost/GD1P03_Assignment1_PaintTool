@@ -49,11 +49,7 @@ private:
 	sf::Vector2f WorldToCanvas(sf::Vector2f worldPosition) const;
 	bool IsInsideCanvas(sf::Vector2f worldPosition) const;
 	bool IsActiveButton(cButton& button) const;
-
-	// Spawn Drawing Tools
-	void SpawnLineTool();
-	void SpawnBoxFillTool();
-	void SpawnBoxEmptyTool();
+	void SubmitTextValue();
 
 	// Use Drawing Tools
 	void UseLineTool();

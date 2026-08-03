@@ -1,8 +1,20 @@
+/***********************************************************************
+Bachelor of Software Engineering
+Media Design School
+Auckland
+New Zealand
+(c) 2026 Media Design School
+File Name : cTextBox.cpp
+Description : Implementations of cTextBox.h.
+Author : Rony Day Song
+Mail : rony.song@mds.ac.nz
+**************************************************************************/
+
 #include "cTextBox.h"
+#include <string>
+#include <algorithm>
 
 #define DELETE_KEY 8
-#define ENTER_KEY 13
-#define ESCAPE_KEY 27
 
 cTextBox::cTextBox(
 	sf::Font& font,
@@ -37,12 +49,6 @@ void cTextBox::HandleInput(const sf::Event::TextEntered& typedText)
 	if (character == DELETE_KEY)
 	{
 		DeleteLastCharacter();
-		return;
-	}
-
-	if (character == ENTER_KEY || character == ESCAPE_KEY)
-	{
-		DeselectTextBox();
 		return;
 	}
 
@@ -108,6 +114,12 @@ void cTextBox::SelectTextBox()
 void cTextBox::DeselectTextBox()
 {
 	m_isSelected = false;
+	
+	if (m_value.isEmpty())
+	{
+		m_value += "1";
+	}
+
 	RefreshDisplay();
 }
 
