@@ -12,7 +12,7 @@ Mail : rony.song@mds.ac.nz
 
 #pragma once
 #include <iostream>
-#include <SFML/Graphics.hpp>
+#include "cButton.h"
 
 class cTextBox
 {
@@ -28,7 +28,7 @@ public:
 	);
 
 	void HandleInput(const sf::Event::TextEntered& input);
-	void Update();
+	void Update(size_t value);
 	void Draw(sf::RenderTarget& target) const;
 
 	void DeleteLastCharacter();
@@ -36,6 +36,8 @@ public:
 	bool IsSelected(sf::Vector2f mousePosition);
 	void SelectTextBox();
 	void DeselectTextBox();
+	void Show();
+	void Hide();
 		
 	inline void SetSelected(bool value) { m_isSelected = value; }
 	inline bool GetSelected() const { return m_isSelected; }
@@ -52,5 +54,6 @@ private:
 
 	int m_textLimit;
 	bool m_isSelected;
+	bool m_isVisible;
 };
 

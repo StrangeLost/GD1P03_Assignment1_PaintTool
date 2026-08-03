@@ -18,6 +18,7 @@ cPaint::cPaint()
 	: m_window(sf::VideoMode({ 1280, 720 }), "Painter"),
 	m_canvas({ 1232, 600 }),
 	m_tempCanvas({ 1232, 600 }),
+	m_brushShape(nullptr),
 	m_activeButton(nullptr),
 	m_activeTextBox(nullptr),
 
@@ -40,7 +41,7 @@ cPaint::cPaint()
 	// Load the icon button textures
 	m_lineTexture("icon_line_32x32.png"),
 	m_boxFillTexture("icon_box_fill_32x32.png"),
-	m_boxEmptyTexture("icon_box_empty_32x32.png"),
+	m_ellipseFillTexture("icon_ellipse_fill_32x32.png"),
 
 	// Initialize all buttons
 	m_lineButton(
@@ -69,11 +70,11 @@ cPaint::cPaint()
 		}
 	),
 
-	m_boxEmptyButton(
+	m_ellipseFillButton(
 		{ 76.f, 8.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
-		m_boxEmptyTexture,			// Button box icon
+		m_ellipseFillTexture,			// Button box icon
 		false,						// Button isDisabled
 		true,						// Button isToggleable
 		[this](cButton& button)		// Button onClick
@@ -99,7 +100,7 @@ cPaint::cPaint()
 	{
 		&m_lineButton,
 		&m_boxFillButton,
-		&m_boxEmptyButton,
+		&m_ellipseFillButton,
 	};
 
 	// Store all the textboxes into m_textBoxes
@@ -245,13 +246,16 @@ void cPaint::HandleToolInput(const sf::Event& event)
 			m_startDrawPosition = WorldToCanvas(m_mousePosition);
 
 			if (m_activeButton == &m_lineButton)
-				m_brushShape = new sf::RectangleShape({ 0.f, 0.f });
+				m_brushShape = new sf::RectangleShape();
 
 			if (m_activeButton == &m_boxFillButton)
-				m_brushShape = new sf::RectangleShape({ 0.f, 0.f });
+				m_brushShape = new sf::RectangleShape();
 
-			if (m_activeButton == &m_boxEmptyButton)
-				return;
+			if (m_activeButton == &m_ellipseFillButton)
+				m_brushShape = new EllipseShape(
+					{ 0.f, 0.f },
+					m_pointCount
+				);
 		}
 	}
 
@@ -342,15 +346,22 @@ void cPaint::UpdateToolUse()
 	if (m_activeButton == &m_boxFillButton)
 		UseBoxFillTool();
 
-	if (m_activeButton == &m_boxEmptyButton)
-		UseBoxEmptyTool();
+	if (m_activeButton == &m_ellipseFillButton)
+		UseEllipseFillTool();
 }
 
 void cPaint::UpdateTextBoxes()
 {
 	for (cTextBox* textBox : m_textBoxes)
 	{
-		textBox->Update();
+		if (m_activeButton == nullptr)
+			return;
+		
+		if (m_activeButton == &m_lineButton)
+			textBox->Update(m_brushRadius);
+
+		if (m_activeButton == &m_ellipseFillButton)
+			textBox->Update(m_pointCount);
 	}
 }
 
@@ -364,11 +375,16 @@ void cPaint::DrawButtons()
 
 void cPaint::DrawTextBoxes()
 {
-	if (m_activeButton == nullptr)
-		return;
-
-	for (const cTextBox* textBox : m_textBoxes)
+	for (cTextBox* textBox : m_textBoxes)
 	{
+		if (m_activeButton == nullptr ||
+			m_activeButton == &m_boxFillButton)
+		{
+			textBox->Hide();
+			return;
+		}
+
+		textBox->Show();
 		textBox->Draw(m_window);
 	}
 }
@@ -408,7 +424,13 @@ void cPaint::SubmitTextValue()
 		return;
 
 	m_activeTextBox->DeselectTextBox();
-	m_brushRadius = m_activeTextBox->GetValue();
+
+	if (m_activeButton == &m_lineButton)
+		m_brushRadius = m_activeTextBox->GetValue();
+
+	if (m_activeButton == &m_ellipseFillButton)
+		m_pointCount = m_activeTextBox->GetValue();
+	
 	m_activeTextBox = nullptr;
 }
 
@@ -449,8 +471,26 @@ void cPaint::UseBoxFillTool()
 	}
 }
 
-void cPaint::UseBoxEmptyTool()
+void cPaint::UseEllipseFillTool()
 {
+	if (auto* ellipseFill = dynamic_cast<EllipseShape*>(m_brushShape))
+	{
+		const sf::Vector2f currentPosition = WorldToCanvas(m_mousePosition);
 
+		// Support dragging in every direction.
+		const sf::Vector2f topLeft{
+			std::min(m_startDrawPosition.x, currentPosition.x),
+			std::min(m_startDrawPosition.y, currentPosition.y)
+		};
+
+		const sf::Vector2f size{
+			std::abs(currentPosition.x - m_startDrawPosition.x),
+			std::abs(currentPosition.y - m_startDrawPosition.y)
+		};
+
+		ellipseFill->setPosition(topLeft);
+		ellipseFill->setRadius(size / 2.f);
+		ellipseFill->setFillColor(m_brushColor);
+	}
 }
 

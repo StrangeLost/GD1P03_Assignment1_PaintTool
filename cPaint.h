@@ -13,6 +13,7 @@ Mail : rony.song@mds.ac.nz
 #pragma once
 #include "cButton.h"
 #include "cTextBox.h"
+#include "EllipseShape.h"
 
 class cPaint
 {
@@ -54,7 +55,7 @@ private:
 	// Use Drawing Tools
 	void UseLineTool();
 	void UseBoxFillTool();
-	void UseBoxEmptyTool();
+	void UseEllipseFillTool();
 	
 	// Window
 	sf::RenderWindow m_window;
@@ -71,7 +72,8 @@ private:
 	// Drawing Brush
 	bool m_isDrawing = false;
 	float m_brushRadius = 8.f;
-	sf::Shape* m_brushShape = nullptr;
+	size_t m_pointCount = 32;
+	sf::Shape* m_brushShape;
 	sf::Vector2f m_startDrawPosition;
 	sf::Color m_brushColor = sf::Color::Black;
 
@@ -86,14 +88,14 @@ private:
 	// Button icon textures
 	sf::Texture m_lineTexture;
 	sf::Texture m_boxFillTexture;
-	sf::Texture m_boxEmptyTexture;
+	sf::Texture m_ellipseFillTexture;
 
 	// Button base textures
 	std::vector<cButton*> m_buttons;
 	cButton* m_activeButton;
 	cButton m_lineButton;
 	cButton m_boxFillButton;
-	cButton m_boxEmptyButton;
+	cButton m_ellipseFillButton;
 
 	// Text boxes
 	sf::Font m_font;

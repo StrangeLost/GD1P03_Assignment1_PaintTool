@@ -28,7 +28,8 @@ cTextBox::cTextBox(
 	: m_textDisplay(font),
 	  m_textLimit(textLimit),
 	  m_value(texts),
-	  m_isSelected(false)
+	  m_isSelected(false),
+	  m_isVisible(true)
 {
 	m_textBox.setPosition(boxPosition);
 	m_textBox.setSize(boxSize);
@@ -62,8 +63,15 @@ void cTextBox::HandleInput(const sf::Event::TextEntered& typedText)
 	Type(character);
 }
 
-void cTextBox::Update()
+void cTextBox::Update(size_t value)
 {
+	if (!m_isSelected)
+	{
+		m_value = std::to_string(value);
+	}
+
+	RefreshDisplay();
+
 	const sf::Vector2f boxCenter = m_textBox.getPosition() + m_textBox.getSize() / 2.f;
 	const sf::FloatRect textBounds = m_textDisplay.getLocalBounds();
 	
@@ -121,6 +129,16 @@ void cTextBox::DeselectTextBox()
 	}
 
 	RefreshDisplay();
+}
+
+void cTextBox::Show()
+{
+	m_isVisible = true;
+}
+
+void cTextBox::Hide()
+{
+	m_isVisible = false;
 }
 
 void cTextBox::RefreshDisplay()

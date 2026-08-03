@@ -38,6 +38,9 @@
     <ClInclude Include="cTextBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EllipseShape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon_box_disabled_32x32.png">
@@ -62,6 +65,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="icon_line_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="icon_ellipse_fill_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
