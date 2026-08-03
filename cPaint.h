@@ -54,11 +54,13 @@ private:
 	bool IsInsideCanvas(sf::Vector2f worldPosition) const;
 	bool IsActiveButton(cButton& button) const;
 	void SubmitTextValue();
+	void FinishPolygon();
 
 	// Use Drawing Tools
 	void UseLineTool();
 	void UseBoxFillTool();
 	void UseEllipseFillTool();
+	void UsePolygonTool();
 
 	// Save & Load images
 	bool SaveCanvas(const std::filesystem::path& filePath);
@@ -83,6 +85,12 @@ private:
 	sf::Shape* m_brushShape;
 	sf::Vector2f m_startDrawPosition;
 	sf::Color m_brushColor = sf::Color::Black;
+	
+	// Polygon specific
+	bool m_isPolygoning = false;
+	std::vector<sf::Vector2f> m_polygonPoints;
+	sf::VertexArray m_polygonVertex;
+	sf::ConvexShape m_polygon;
 
 	// Button base textures
 	sf::Texture m_normalButtonTexture;
@@ -96,6 +104,7 @@ private:
 	sf::Texture m_lineTexture;
 	sf::Texture m_boxFillTexture;
 	sf::Texture m_ellipseFillTexture;
+	sf::Texture m_polygonTexture;
 	sf::Texture m_saveTexture;
 	sf::Texture m_loadTexture;
 
@@ -105,6 +114,7 @@ private:
 	cButton m_lineButton;
 	cButton m_boxFillButton;
 	cButton m_ellipseFillButton;
+	cButton m_polygonButton;
 	cButton m_saveButton;
 	cButton m_loadButton;
 

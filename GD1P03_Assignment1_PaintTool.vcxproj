@@ -185,6 +185,7 @@
     <Image Include="icon_ellipse_fill_32x32.png" />
     <Image Include="icon_line_32x32.png" />
     <Image Include="icon_load_32x32.png" />
+    <Image Include="icon_polygon_32x32.png" />
     <Image Include="icon_save_32x32.png" />
   </ItemGroup>
   <ItemGroup>

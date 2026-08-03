@@ -39,7 +39,9 @@ public:
 	void DeselectTextBox();
 	void Show();
 	void Hide();
-		
+	
+	inline void SetBoxPosition(sf::Vector2f position) { m_textBox.setPosition(position); }
+
 	inline void SetSelected(bool value) { m_isSelected = value; }
 	inline bool GetSelected() const { return m_isSelected; }
 

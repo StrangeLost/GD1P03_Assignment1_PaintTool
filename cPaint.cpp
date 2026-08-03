@@ -18,6 +18,7 @@ cPaint::cPaint()
 	: m_window(sf::VideoMode({ 1280, 720 }), "Painter"),
 	m_canvas({ 1232, 600 }),
 	m_tempCanvas({ 1232, 600 }),
+	m_polygonVertex(sf::PrimitiveType::LineStrip),
 	m_brushShape(nullptr),
 	m_activeButton(nullptr),
 	m_activeTextBox(nullptr),
@@ -42,6 +43,7 @@ cPaint::cPaint()
 	m_lineTexture("icon_line_32x32.png"),
 	m_boxFillTexture("icon_box_fill_32x32.png"),
 	m_ellipseFillTexture("icon_ellipse_fill_32x32.png"),
+	m_polygonTexture("icon_polygon_32x32.png"),
 	m_saveTexture("icon_save_32x32.png"),
 	m_loadTexture("icon_load_32x32.png"),
 
@@ -76,7 +78,20 @@ cPaint::cPaint()
 		{ 76.f, 8.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
-		m_ellipseFillTexture,			// Button box icon
+		m_ellipseFillTexture,		// Button box icon
+		false,						// Button isDisabled
+		true,						// Button isToggleable
+		[this](cButton& button)		// Button onClick
+		{
+			SwitchTool(button);
+		}
+	),
+
+	m_polygonButton(
+		{ 110.f, 8.f },				// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_polygonTexture,			// Button box icon
 		false,						// Button isDisabled
 		true,						// Button isToggleable
 		[this](cButton& button)		// Button onClick
@@ -86,7 +101,7 @@ cPaint::cPaint()
 	),
 
 	m_saveButton(
-		{ 110.f, 8.f },				// Button Position
+		{ 144.f, 42.f },			// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
 		m_saveTexture,				// Button box icon
@@ -111,7 +126,7 @@ cPaint::cPaint()
 	),
 
 	m_loadButton(
-		{ 144.f, 8.f },				// Button Position
+		{ 178.f,42.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
 		m_loadTexture,				// Button box icon
@@ -152,6 +167,7 @@ cPaint::cPaint()
 		&m_lineButton,
 		&m_boxFillButton,
 		&m_ellipseFillButton,
+		&m_polygonButton,
 		&m_saveButton,
 		&m_loadButton
 	};
@@ -204,8 +220,8 @@ void cPaint::HandleEvents()
 		// Handle software exit
 		if (event->is<sf::Event::Closed>())
 		{
+			//ImGui::SFML::Shutdown();
 			m_window.close();
-			ImGui::SFML::Shutdown();
 		}
 
 		ImGui::SFML::ProcessEvent(m_window, *event);
@@ -235,6 +251,12 @@ void cPaint::Draw()
 	if (m_isDrawing && m_brushShape != nullptr)
 	{
 		m_tempCanvas.draw(*m_brushShape);
+	}
+
+	// Specifically for polygon stuff
+	if (m_isPolygoning)
+	{
+		m_tempCanvas.draw(m_polygonVertex);
 	}
 
 	m_tempCanvas.display();
@@ -315,6 +337,19 @@ void cPaint::HandleToolInput(const sf::Event& event)
 					{ 0.f, 0.f },
 					m_pointCount
 				);
+
+			if (m_activeButton == &m_polygonButton)
+			{
+				const sf::Vector2f worldPosition = m_window.mapPixelToCoords(pressed->position);
+				
+				if (!IsInsideCanvas(worldPosition))
+					return;
+				
+				const sf::Vector2f canvasPosition = WorldToCanvas(worldPosition);
+
+				m_isPolygoning = true;
+				m_polygonPoints.push_back(canvasPosition);
+			}
 		}
 	}
 
@@ -331,6 +366,18 @@ void cPaint::HandleToolInput(const sf::Event& event)
 			m_isDrawing = false;
 			delete m_brushShape;
 			m_brushShape = nullptr;
+		}
+	}
+
+	if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (pressed->button == sf::Mouse::Button::Right)
+		{
+			if (m_activeButton == nullptr || m_activeButton != &m_polygonButton)
+				return;
+
+			m_isPolygoning = false;
+			FinishPolygon();
 		}
 	}
 }
@@ -401,6 +448,9 @@ void cPaint::UpdateButtons()
 
 void cPaint::UpdateToolUse()
 {
+	if (m_isPolygoning)
+		UsePolygonTool();
+
 	if (m_activeButton == nullptr || !m_isDrawing || m_brushShape == nullptr)
 		return;
 	
@@ -422,10 +472,16 @@ void cPaint::UpdateTextBoxes()
 			return;
 		
 		if (m_activeButton == &m_lineButton)
-			textBox->Update(m_brushRadius);
+		{
+			textBox->SetBoxPosition({ 8.f, 42.f });
+			textBox->Update(static_cast<size_t>(m_brushRadius));
+		}
 
 		if (m_activeButton == &m_ellipseFillButton)
+		{
+			textBox->SetBoxPosition({ 76.f, 42.f });
 			textBox->Update(m_pointCount);
+		}
 	}
 }
 
@@ -441,8 +497,9 @@ void cPaint::DrawTextBoxes()
 {
 	for (cTextBox* textBox : m_textBoxes)
 	{
-		if (m_activeButton == nullptr ||
-			m_activeButton == &m_boxFillButton)
+		if (m_activeButton == nullptr			||
+			m_activeButton == &m_boxFillButton	||
+			m_activeButton == &m_polygonButton)
 		{
 			textBox->Hide();
 			return;
@@ -457,6 +514,10 @@ void cPaint::SwitchTool(cButton& toolButton)
 {
 	if (m_activeButton == &toolButton)
 		return;
+
+	m_isPolygoning = false;
+	m_polygonVertex.clear();
+	m_polygonPoints.clear();
 
 	if (m_activeButton != nullptr)
 	{
@@ -493,9 +554,43 @@ void cPaint::SubmitTextValue()
 		m_brushRadius = m_activeTextBox->GetValue();
 
 	if (m_activeButton == &m_ellipseFillButton)
-		m_pointCount = m_activeTextBox->GetValue();
+		m_pointCount = static_cast<size_t>(m_activeTextBox->GetValue());
 	
 	m_activeTextBox = nullptr;
+}
+
+void cPaint::FinishPolygon()
+{
+	if (m_polygonPoints.size() < 3)
+	{
+		m_polygonPoints.clear();
+		m_polygonVertex.clear();
+		return;
+	}
+
+	m_polygonVertex.clear();
+	m_polygon.setPointCount(m_polygonPoints.size());
+
+	//for (const sf::Vector2f& point : m_polygonPoints)
+	//{
+	//	m_polygonVertex.append({ point, m_brushColor });
+	//}
+
+	for (std::size_t i = 0; i < m_polygonPoints.size(); ++i)
+	{
+		m_polygonVertex.append({ m_polygonPoints[i], m_brushColor });
+		m_polygon.setPoint(i, m_polygonPoints[i]);
+	}
+
+	m_polygonVertex.append({ m_polygonPoints.front(), m_brushColor });
+	m_polygon.setFillColor(m_brushColor);
+
+	m_canvas.draw(m_polygonVertex);
+	m_canvas.draw(m_polygon);
+	m_canvas.display();
+
+	m_polygonVertex.clear();
+	m_polygonPoints.clear();
 }
 
 void cPaint::UseLineTool()
@@ -555,6 +650,27 @@ void cPaint::UseEllipseFillTool()
 		ellipseFill->setPosition(topLeft);
 		ellipseFill->setRadius(size / 2.f);
 		ellipseFill->setFillColor(m_brushColor);
+	}
+}
+
+void cPaint::UsePolygonTool()
+{
+	m_polygonVertex.clear();
+
+	for (const sf::Vector2f& point : m_polygonPoints)
+	{
+		m_polygonVertex.append({
+			point,
+			m_brushColor
+			});
+	}
+
+	if (!m_polygonPoints.empty())
+	{
+		m_polygonVertex.append({
+			WorldToCanvas(m_mousePosition),
+			m_brushColor
+			});
 	}
 }
 
