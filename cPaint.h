@@ -47,6 +47,7 @@ private:
 	// Draws handling
 	void DrawButtons();
 	void DrawTextBoxes();
+	void DrawColorPicker();
 
 	// Helper Functions
 	void SwitchTool(cButton& toolButton);
@@ -89,6 +90,8 @@ private:
 	sf::Shape* m_brushShape;
 	sf::Vector2f m_startDrawPosition;
 	sf::Color m_brushColor = sf::Color::Black;
+	float m_brushColorValues[3] = { 0.f, 0.f, 0.f };
+	bool m_showColorPicker = false;
 	
 	// Polygon specific
 	bool m_isPolygoning = false;
@@ -115,6 +118,7 @@ private:
 	sf::Texture m_ellipseFillTexture;
 	sf::Texture m_polygonTexture;
 	sf::Texture m_stampTexture;
+	sf::Texture m_colorTexture;
 	sf::Texture m_saveTexture;
 	sf::Texture m_loadTexture;
 
@@ -126,6 +130,7 @@ private:
 	cButton m_ellipseFillButton;
 	cButton m_polygonButton;
 	cButton m_stampButton;
+	cButton m_colorButton;
 	cButton m_saveButton;
 	cButton m_loadButton;
 
@@ -134,8 +139,5 @@ private:
 	std::vector<cTextBox*> m_textBoxes;
 	cTextBox* m_activeTextBox;
 	cTextBox m_brushTextBox;
-
-	// ImGui flags
-	bool testFlag = false;
 };
 

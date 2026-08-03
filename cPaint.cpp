@@ -12,6 +12,7 @@ Mail : rony.song@mds.ac.nz
 
 #include "cPaint.h"
 #include <cmath>
+#include <cstdint>
 
 cPaint::cPaint()
 // Initialize the software window
@@ -45,6 +46,7 @@ cPaint::cPaint()
 	m_ellipseFillTexture("icon_ellipse_fill_32x32.png"),
 	m_polygonTexture("icon_polygon_32x32.png"),
 	m_stampTexture("icon_stamp_32x32.png"),
+	m_colorTexture("icon_color_32x32.png"),
 	m_saveTexture("icon_save_32x32.png"),
 	m_loadTexture("icon_load_32x32.png"),
 
@@ -113,7 +115,7 @@ cPaint::cPaint()
 			SwitchTool(button);
 
 			std::vector<std::string> loadPath = pfd::open_file(
-				"Open image", ".",
+				"Load image stamp", ".",
 				{ "Image files", "*.png *.jpg *.jpeg *.bmp *.tga" },
 				pfd::opt::none
 			).result();
@@ -124,6 +126,19 @@ cPaint::cPaint()
 
 				LoadStampImage(filePath);
 			}
+		}
+	),
+
+	m_colorButton(
+		{ 178.f, 8.f },				// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_colorTexture,				// Button box icon
+		false,						// Button isDisabled
+		false,						// Button isToggleable
+		[this](cButton&)				// Button onClick
+		{
+			m_showColorPicker = !m_showColorPicker;
 		}
 	),
 
@@ -196,6 +211,7 @@ cPaint::cPaint()
 		&m_ellipseFillButton,
 		&m_polygonButton,
 		&m_stampButton,
+		&m_colorButton,
 		&m_saveButton,
 		&m_loadButton
 	};
@@ -289,12 +305,11 @@ void cPaint::Draw()
 
 	// Specifically for stamp stuff
 	if (m_activeButton == &m_stampButton &&
-		m_hasStampImage &&
-		IsInsideCanvas(m_mousePosition))
+		m_hasStampImage)
 	{
 		sf::Sprite stampSprite(m_stampImage);
 
-		const sf::Vector2u imageSize = m_stampImage.getSize();
+		const sf::Vector2 imageSize = m_stampImage.getSize();
 
 		const sf::Vector2f scaledSize{
 			static_cast<float>(imageSize.x) * m_stampScale,
@@ -305,7 +320,6 @@ void cPaint::Draw()
 			WorldToCanvas(m_mousePosition) - scaledSize / 2.f;
 
 		stampSprite.setPosition(position);
-
 		stampSprite.setScale({ m_stampScale, m_stampScale });
 
 		// Preview on the temporary canvas.
@@ -318,6 +332,7 @@ void cPaint::Draw()
 	m_window.draw(m_tempCanvasDisplay); // Temporary Draw
 	DrawButtons();
 	DrawTextBoxes();
+	DrawColorPicker();
 	ImGui::SFML::Render(m_window);
 
 	m_window.display();
@@ -344,6 +359,9 @@ void cPaint::HandleButtonInput(const sf::Event& event)
 {
 	if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
 	{
+		if (ImGui::GetIO().WantCaptureMouse)
+			return;
+
 		// On Mouse Left Button Press
 		if (pressed->button == sf::Mouse::Button::Left)
 		{
@@ -371,13 +389,22 @@ void cPaint::HandleToolInput(const sf::Event& event)
 {
 	if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
 	{
+		if (ImGui::GetIO().WantCaptureMouse)
+			return;
+
 		if (pressed->button == sf::Mouse::Button::Left)
 		{
 			if (m_activeButton == nullptr)
 				return;
 
+			const sf::Vector2f worldPosition =
+				m_window.mapPixelToCoords(pressed->position);
+
+			if (!IsInsideCanvas(worldPosition))
+				return;
+
 			m_isDrawing = true;
-			m_startDrawPosition = WorldToCanvas(m_mousePosition);
+			m_startDrawPosition = WorldToCanvas(worldPosition);
 
 			if (m_activeButton == &m_lineButton)
 				m_brushShape = new sf::RectangleShape();
@@ -393,11 +420,6 @@ void cPaint::HandleToolInput(const sf::Event& event)
 
 			if (m_activeButton == &m_polygonButton)
 			{
-				const sf::Vector2f worldPosition = m_window.mapPixelToCoords(pressed->position);
-				
-				if (!IsInsideCanvas(worldPosition))
-					return;
-				
 				const sf::Vector2f canvasPosition = WorldToCanvas(worldPosition);
 
 				m_isPolygoning = true;
@@ -445,6 +467,9 @@ void cPaint::HandleTextBoxes(const sf::Event& event)
 {
 	if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
 	{
+		if (ImGui::GetIO().WantCaptureMouse)
+			return;
+
 		if (pressed->button == sf::Mouse::Button::Left)
 		{
 			for (cTextBox* textBox : m_textBoxes)
@@ -574,6 +599,40 @@ void cPaint::DrawTextBoxes()
 
 		textBox->Hide();
 	}
+}
+
+void cPaint::DrawColorPicker()
+{
+	if (!m_showColorPicker)
+		return;
+
+	ImGui::SetNextWindowPos(ImVec2(220.f, 8.f), ImGuiCond_Appearing);
+
+	constexpr ImGuiWindowFlags windowFlags =
+		ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoSavedSettings;
+
+	if (ImGui::Begin("Colour Wheel", &m_showColorPicker, windowFlags))
+	{
+		constexpr ImGuiColorEditFlags pickerFlags =
+			ImGuiColorEditFlags_NoAlpha |
+			ImGuiColorEditFlags_NoInputs |
+			ImGuiColorEditFlags_NoLabel |
+			ImGuiColorEditFlags_NoSidePreview |
+			ImGuiColorEditFlags_NoSmallPreview |
+			ImGuiColorEditFlags_PickerHueWheel;
+
+		if (ImGui::ColorPicker3("##BrushColour", m_brushColorValues, pickerFlags))
+		{
+			m_brushColor = sf::Color(
+				static_cast<std::uint8_t>(m_brushColorValues[0] * 255.f),
+				static_cast<std::uint8_t>(m_brushColorValues[1] * 255.f),
+				static_cast<std::uint8_t>(m_brushColorValues[2] * 255.f)
+			);
+		}
+	}
+
+	ImGui::End();
 }
 
 void cPaint::SwitchTool(cButton& toolButton)
@@ -746,11 +805,8 @@ void cPaint::LoadStampImage(const std::filesystem::path& filePath)
 
 	const sf::Vector2 imageSize = m_stampImage.getSize();
 
-	const float widthScale =
-		m_canvasSize.x / static_cast<float>(imageSize.x);
-
-	const float heightScale =
-		m_canvasSize.y / static_cast<float>(imageSize.y);
+	const float widthScale = m_canvasSize.x / static_cast<float>(imageSize.x);
+	const float heightScale = m_canvasSize.y / static_cast<float>(imageSize.y);
 
 	m_stampScale = std::min({ 1.f, widthScale, heightScale });
 	m_hasStampImage = true;
@@ -770,8 +826,7 @@ void cPaint::PlaceStamp()
 		static_cast<float>(imageSize.y) * m_stampScale
 	};
 
-	sf::Vector2f position =
-		WorldToCanvas(m_mousePosition) - scaledSize / 2.f;
+	sf::Vector2f position = WorldToCanvas(m_mousePosition) - scaledSize / 2.f;
 
 	stampSprite.setPosition(position);
 	stampSprite.setScale({ m_stampScale, m_stampScale });

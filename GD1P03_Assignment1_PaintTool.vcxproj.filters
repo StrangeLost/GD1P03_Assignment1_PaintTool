@@ -127,6 +127,9 @@
     <Image Include="icon_stamp_32x32.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="icon_color_32x32.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Font Include="Roboto.ttf">
