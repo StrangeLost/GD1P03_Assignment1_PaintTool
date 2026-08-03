@@ -13,6 +13,7 @@ Mail : rony.song@mds.ac.nz
 #pragma once
 #include <iostream>
 #include "cButton.h"
+#include "portable-file-dialogs.h"
 
 class cTextBox
 {
@@ -34,7 +35,7 @@ public:
 	void DeleteLastCharacter();
 	void Type(int inputChar);
 	bool IsSelected(sf::Vector2f mousePosition);
-	void SelectTextBox();
+	void SelectTextBox(int minValue);
 	void DeselectTextBox();
 	void Show();
 	void Hide();
@@ -53,6 +54,7 @@ private:
 	sf::String m_value;
 
 	int m_textLimit;
+	int m_minValue;
 	bool m_isSelected;
 	bool m_isVisible;
 };

@@ -42,6 +42,8 @@ cPaint::cPaint()
 	m_lineTexture("icon_line_32x32.png"),
 	m_boxFillTexture("icon_box_fill_32x32.png"),
 	m_ellipseFillTexture("icon_ellipse_fill_32x32.png"),
+	m_saveTexture("icon_save_32x32.png"),
+	m_loadTexture("icon_load_32x32.png"),
 
 	// Initialize all buttons
 	m_lineButton(
@@ -83,6 +85,55 @@ cPaint::cPaint()
 		}
 	),
 
+	m_saveButton(
+		{ 110.f, 8.f },				// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_saveTexture,				// Button box icon
+		false,						// Button isDisabled
+		false,						// Button isToggleable
+		[this](cButton& button)		// Button onClick
+		{
+			std::string savePath = pfd::save_file(
+				"Save image", "Painting.png",
+				{ "PNG image", "*.png" }
+			).result();
+
+			if (savePath != "")
+			{
+				std::filesystem::path filePath(savePath);
+
+				filePath.replace_extension(".png");
+
+				SaveCanvas(filePath);
+			}
+		}
+	),
+
+	m_loadButton(
+		{ 144.f, 8.f },				// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_loadTexture,				// Button box icon
+		false,						// Button isDisabled
+		false,						// Button isToggleable
+		[this](cButton& button)		// Button onClick
+		{
+			std::vector<std::string> loadPath = pfd::open_file(
+				"Open image", ".",
+				{ "Image files", "*.png *.jpg *.jpeg *.bmp *.tga" },
+				pfd::opt::none
+			).result();
+
+			if (!loadPath.empty())
+			{
+				std::filesystem::path filePath = loadPath.front();
+				
+				LoadCanvas(filePath);
+			}
+		}
+	),
+
 	// Initialize all textBoxes
 	m_font("Roboto.ttf"),
 	m_brushTextBox(
@@ -101,6 +152,8 @@ cPaint::cPaint()
 		&m_lineButton,
 		&m_boxFillButton,
 		&m_ellipseFillButton,
+		&m_saveButton,
+		&m_loadButton
 	};
 
 	// Store all the textboxes into m_textBoxes
@@ -126,6 +179,8 @@ cPaint::cPaint()
 	m_tempCanvasDisplay.setPosition(m_canvasPosition);
 	m_tempCanvasDisplay.setSize(m_canvasSize);
 	m_tempCanvasDisplay.setTexture(&m_tempCanvas.getTexture(), true);
+
+	ImGui::SFML::Init(m_window);
 }
 
 void cPaint::Run()
@@ -134,7 +189,7 @@ void cPaint::Run()
 	
 	while (m_window.isOpen())
 	{
-		float deltaTime = clock.restart().asSeconds();
+		sf::Time deltaTime = clock.restart();
 		
 		HandleEvents();
 		Update(deltaTime);
@@ -150,8 +205,10 @@ void cPaint::HandleEvents()
 		if (event->is<sf::Event::Closed>())
 		{
 			m_window.close();
+			ImGui::SFML::Shutdown();
 		}
 
+		ImGui::SFML::ProcessEvent(m_window, *event);
 		HandleWindowResize(*event);
 		HandleButtonInput(*event);
 		HandleToolInput(*event);
@@ -160,8 +217,9 @@ void cPaint::HandleEvents()
 	}
 }
 
-void cPaint::Update(float deltaTime)
+void cPaint::Update(sf::Time deltaTime)
 {
+	ImGui::SFML::Update(m_window, deltaTime);
 	UpdateMousePosition();
 	UpdateButtons();
 	UpdateToolUse();
@@ -185,6 +243,7 @@ void cPaint::Draw()
 	m_window.draw(m_tempCanvasDisplay); // Temporary Draw
 	DrawButtons();
 	DrawTextBoxes();
+	ImGui::SFML::Render(m_window);
 
 	m_window.display();
 }
@@ -286,7 +345,12 @@ void cPaint::HandleTextBoxes(const sf::Event& event)
 			{
 				if (textBox->IsSelected(m_mousePosition))
 				{
-					textBox->SelectTextBox();
+					if (m_activeButton == &m_lineButton)
+						textBox->SelectTextBox(1);
+
+					if (m_activeButton == &m_ellipseFillButton)
+						textBox->SelectTextBox(3);
+
 					m_activeTextBox = textBox;
 					return;
 				}
@@ -492,5 +556,30 @@ void cPaint::UseEllipseFillTool()
 		ellipseFill->setRadius(size / 2.f);
 		ellipseFill->setFillColor(m_brushColor);
 	}
+}
+
+bool cPaint::SaveCanvas(const std::filesystem::path& filePath)
+{
+	m_canvas.display();
+
+	const sf::Image image = m_canvas.getTexture().copyToImage();
+
+	return image.saveToFile(filePath);
+}
+
+bool cPaint::LoadCanvas(const std::filesystem::path& filePath)
+{
+	sf::Texture loadedTexture;
+
+	if (!loadedTexture.loadFromFile(filePath))
+		return false;
+
+	sf::Sprite loadedSprite(loadedTexture);
+
+	m_canvas.clear(sf::Color::White);
+	m_canvas.draw(loadedSprite);
+	m_canvas.display();
+
+	return true;
 }
 

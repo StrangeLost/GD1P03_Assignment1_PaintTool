@@ -11,6 +11,9 @@ Mail : rony.song@mds.ac.nz
 **************************************************************************/
 
 #pragma once
+#include <filesystem>
+#include "imgui.h"
+#include "imgui-SFML.h"
 #include "cButton.h"
 #include "cTextBox.h"
 #include "EllipseShape.h"
@@ -25,7 +28,7 @@ public:
 private:
 	// Core functions
 	void HandleEvents();
-	void Update(float deltaTime);
+	void Update(sf::Time deltaTime);
 	void Draw();
 
 	// Events Handling
@@ -56,6 +59,10 @@ private:
 	void UseLineTool();
 	void UseBoxFillTool();
 	void UseEllipseFillTool();
+
+	// Save & Load images
+	bool SaveCanvas(const std::filesystem::path& filePath);
+	bool LoadCanvas(const std::filesystem::path& filePath);
 	
 	// Window
 	sf::RenderWindow m_window;
@@ -89,6 +96,8 @@ private:
 	sf::Texture m_lineTexture;
 	sf::Texture m_boxFillTexture;
 	sf::Texture m_ellipseFillTexture;
+	sf::Texture m_saveTexture;
+	sf::Texture m_loadTexture;
 
 	// Button base textures
 	std::vector<cButton*> m_buttons;
@@ -96,11 +105,16 @@ private:
 	cButton m_lineButton;
 	cButton m_boxFillButton;
 	cButton m_ellipseFillButton;
+	cButton m_saveButton;
+	cButton m_loadButton;
 
 	// Text boxes
 	sf::Font m_font;
 	std::vector<cTextBox*> m_textBoxes;
 	cTextBox* m_activeTextBox;
 	cTextBox m_brushTextBox;
+
+	// ImGui flags
+	bool testFlag = false;
 };
 

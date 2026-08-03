@@ -29,7 +29,8 @@ cTextBox::cTextBox(
 	  m_textLimit(textLimit),
 	  m_value(texts),
 	  m_isSelected(false),
-	  m_isVisible(true)
+	  m_isVisible(true),
+	  m_minValue(1)
 {
 	m_textBox.setPosition(boxPosition);
 	m_textBox.setSize(boxSize);
@@ -110,11 +111,12 @@ bool cTextBox::IsSelected(sf::Vector2f mousePosition)
 	return m_textBox.getGlobalBounds().contains(mousePosition);
 }
 
-void cTextBox::SelectTextBox()
+void cTextBox::SelectTextBox(int minValue)
 {
 	if (m_isSelected)
 		return;
 
+	m_minValue = minValue;
 	m_isSelected = true;
 	RefreshDisplay();
 }
@@ -122,10 +124,12 @@ void cTextBox::SelectTextBox()
 void cTextBox::DeselectTextBox()
 {
 	m_isSelected = false;
+	std::string string = m_value.toAnsiString();
 	
-	if (m_value.isEmpty())
+	if (m_value.isEmpty() ||
+		std::stoi(string) < m_minValue)
 	{
-		m_value += "1";
+		m_value = std::to_string(m_minValue);
 	}
 
 	RefreshDisplay();
