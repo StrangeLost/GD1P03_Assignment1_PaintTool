@@ -20,6 +20,9 @@ cPaint::cPaint()
 	m_canvas({ 1232, 600 }),
 	m_tempCanvas({ 1232, 600 }),
 	m_polygonVertex(sf::PrimitiveType::LineStrip),
+	m_boxOutlineThickness(0.f),
+	m_ellipseOutlineThickness(0.f),
+	m_polygonOutlineThickness(0.f),
 	m_brushShape(nullptr),
 	m_activeButton(nullptr),
 	m_activeTextBox(nullptr),
@@ -46,7 +49,9 @@ cPaint::cPaint()
 	m_ellipseFillTexture("icon_ellipse_fill_32x32.png"),
 	m_polygonTexture("icon_polygon_32x32.png"),
 	m_stampTexture("icon_stamp_32x32.png"),
-	m_colorTexture("icon_color_32x32.png"),
+	m_color1Texture("icon_color1_32x32.png"),
+	m_color2Texture("icon_color2_32x32.png"),
+	m_clearTexture("icon_clear_32x32.png"),
 	m_saveTexture("icon_save_32x32.png"),
 	m_loadTexture("icon_load_32x32.png"),
 
@@ -103,8 +108,36 @@ cPaint::cPaint()
 		}
 	),
 
-	m_stampButton(
+	m_color1Button(
 		{ 144.f, 8.f },				// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_color1Texture,			// Button box icon
+		false,						// Button isDisabled
+		false,						// Button isToggleable
+		[this](cButton&)			// Button onClick
+		{
+			m_showBrushColorPicker = !m_showBrushColorPicker;
+			m_showOutlineColorPicker = false;
+		}
+	),
+		
+	m_color2Button(
+		{ 144.f, 44.f },			// Button Position
+		{ 32.f, 32.f },				// Button Size
+		m_backgroundTextures,		// Button box textures
+		m_color2Texture,			// Button box icon
+		false,						// Button isDisabled
+		false,						// Button isToggleable
+		[this](cButton&)			// Button onClick
+		{
+			m_showOutlineColorPicker = !m_showOutlineColorPicker;
+			m_showBrushColorPicker = false;
+		}
+	),
+
+	m_stampButton(
+		{ 178.f, 8.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
 		m_stampTexture,				// Button box icon
@@ -113,37 +146,25 @@ cPaint::cPaint()
 		[this](cButton& button)		// Button onClick
 		{
 			SwitchTool(button);
-
-			std::vector<std::string> loadPath = pfd::open_file(
-				"Load image stamp", ".",
-				{ "Image files", "*.png *.jpg *.jpeg *.bmp *.tga" },
-				pfd::opt::none
-			).result();
-
-			if (!loadPath.empty())
-			{
-				std::filesystem::path filePath = loadPath.front();
-
-				LoadStampImage(filePath);
-			}
+			LoadStampImage();
 		}
 	),
-
-	m_colorButton(
-		{ 178.f, 8.f },				// Button Position
+	
+	m_clearButton(
+		{ 212.f, 8.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
-		m_colorTexture,				// Button box icon
+		m_clearTexture,				// Button box icon
 		false,						// Button isDisabled
 		false,						// Button isToggleable
-		[this](cButton&)				// Button onClick
+		[this](cButton&)			// Button onClick
 		{
-			m_showColorPicker = !m_showColorPicker;
+			m_canvas.clear(sf::Color::White);
 		}
 	),
 
 	m_saveButton(
-		{ 144.f, 42.f },			// Button Position
+		{ 178.f,44.f },				// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
 		m_saveTexture,				// Button box icon
@@ -151,24 +172,12 @@ cPaint::cPaint()
 		false,						// Button isToggleable
 		[this](cButton& button)		// Button onClick
 		{
-			std::string savePath = pfd::save_file(
-				"Save image", "Painting.png",
-				{ "PNG image", "*.png" }
-			).result();
-
-			if (savePath != "")
-			{
-				std::filesystem::path filePath(savePath);
-
-				filePath.replace_extension(".png");
-
-				SaveCanvas(filePath);
-			}
+			m_fileInterface.SaveFile(&m_canvas);
 		}
 	),
 
 	m_loadButton(
-		{ 178.f,42.f },				// Button Position
+		{ 212.f, 44.f },			// Button Position
 		{ 32.f, 32.f },				// Button Size
 		m_backgroundTextures,		// Button box textures
 		m_loadTexture,				// Button box icon
@@ -176,18 +185,7 @@ cPaint::cPaint()
 		false,						// Button isToggleable
 		[this](cButton& button)		// Button onClick
 		{
-			std::vector<std::string> loadPath = pfd::open_file(
-				"Open image", ".",
-				{ "Image files", "*.png *.jpg *.jpeg *.bmp *.tga" },
-				pfd::opt::none
-			).result();
-
-			if (!loadPath.empty())
-			{
-				std::filesystem::path filePath = loadPath.front();
-				
-				LoadCanvas(filePath);
-			}
+			m_fileInterface.LoadFile(&m_canvas);
 		}
 	),
 
@@ -195,7 +193,7 @@ cPaint::cPaint()
 	m_font("Roboto.ttf"),
 	m_brushTextBox(
 		m_font,				// Text Font
-		{ 8.f, 42.f },		// TextBox Position
+		{ 8.f, 44.f },		// TextBox Position
 		{ 32.f, 32.f },		// TextBox Size
 		3,					// Text Limit
 		16,					// Font Size 
@@ -211,7 +209,9 @@ cPaint::cPaint()
 		&m_ellipseFillButton,
 		&m_polygonButton,
 		&m_stampButton,
-		&m_colorButton,
+		&m_color1Button,
+		&m_color2Button,
+		&m_clearButton,
 		&m_saveButton,
 		&m_loadButton
 	};
@@ -332,7 +332,8 @@ void cPaint::Draw()
 	m_window.draw(m_tempCanvasDisplay); // Temporary Draw
 	DrawButtons();
 	DrawTextBoxes();
-	DrawColorPicker();
+	DrawBrushColorPicker();
+	DrawOutlineColorPicker();
 	ImGui::SFML::Render(m_window);
 
 	m_window.display();
@@ -479,8 +480,14 @@ void cPaint::HandleTextBoxes(const sf::Event& event)
 					if (m_activeButton == &m_lineButton)
 						textBox->SelectTextBox(1);
 
+					if (m_activeButton == &m_boxFillButton)
+						textBox->SelectTextBox(0);
+
 					if (m_activeButton == &m_ellipseFillButton)
-						textBox->SelectTextBox(3);
+						textBox->SelectTextBox(0);
+
+					if (m_activeButton == &m_polygonButton)
+						textBox->SelectTextBox(0);
 
 					m_activeTextBox = textBox;
 					return;
@@ -565,14 +572,26 @@ void cPaint::UpdateTextBoxes()
 		
 		if (m_activeButton == &m_lineButton)
 		{
-			textBox->SetBoxPosition({ 8.f, 42.f });
+			textBox->SetBoxPosition({ 8.f, 44.f });
 			textBox->Update(static_cast<size_t>(m_brushRadius));
+		}
+
+		if (m_activeButton == &m_boxFillButton)
+		{
+			textBox->SetBoxPosition({ 42.f, 44.f });
+			textBox->Update(m_boxOutlineThickness);
 		}
 
 		if (m_activeButton == &m_ellipseFillButton)
 		{
-			textBox->SetBoxPosition({ 76.f, 42.f });
-			textBox->Update(m_pointCount);
+			textBox->SetBoxPosition({ 76.f, 44.f });
+			textBox->Update(m_ellipseOutlineThickness);
+		}
+
+		if (m_activeButton == &m_polygonButton)
+		{
+			textBox->SetBoxPosition({ 110.f, 44.f });
+			textBox->Update(m_polygonOutlineThickness);
 		}
 	}
 }
@@ -589,8 +608,10 @@ void cPaint::DrawTextBoxes()
 {
 	for (cTextBox* textBox : m_textBoxes)
 	{
-		if (m_activeButton == &m_lineButton ||
-			m_activeButton == &m_ellipseFillButton)
+		if (m_activeButton == &m_lineButton			||
+			m_activeButton == &m_boxFillButton		||
+			m_activeButton == &m_ellipseFillButton	||
+			m_activeButton == &m_polygonButton)
 		{
 			textBox->Show();
 			textBox->Draw(m_window);
@@ -601,33 +622,69 @@ void cPaint::DrawTextBoxes()
 	}
 }
 
-void cPaint::DrawColorPicker()
+void cPaint::DrawBrushColorPicker()
 {
-	if (!m_showColorPicker)
+	if (!m_showBrushColorPicker)
 		return;
 
-	ImGui::SetNextWindowPos(ImVec2(220.f, 8.f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(ImVec2(256.f, 8.f), ImGuiCond_Appearing);
 
 	constexpr ImGuiWindowFlags windowFlags =
 		ImGuiWindowFlags_AlwaysAutoResize |
 		ImGuiWindowFlags_NoSavedSettings;
 
-	if (ImGui::Begin("Colour Wheel", &m_showColorPicker, windowFlags))
+	if (ImGui::Begin("Brush Colour Wheel", &m_showBrushColorPicker, windowFlags))
 	{
 		constexpr ImGuiColorEditFlags pickerFlags =
-			ImGuiColorEditFlags_NoAlpha |
-			ImGuiColorEditFlags_NoInputs |
-			ImGuiColorEditFlags_NoLabel |
-			ImGuiColorEditFlags_NoSidePreview |
-			ImGuiColorEditFlags_NoSmallPreview |
-			ImGuiColorEditFlags_PickerHueWheel;
+			ImGuiColorEditFlags_NoInputs		|
+			ImGuiColorEditFlags_NoLabel			|
+			ImGuiColorEditFlags_NoSidePreview	|
+			ImGuiColorEditFlags_NoSmallPreview	|
+			ImGuiColorEditFlags_PickerHueWheel	|
+			ImGuiColorEditFlags_AlphaBar;
 
-		if (ImGui::ColorPicker3("##BrushColour", m_brushColorValues, pickerFlags))
+		if (ImGui::ColorPicker4("##BrushColour", m_brushColorValues, pickerFlags))
 		{
 			m_brushColor = sf::Color(
 				static_cast<std::uint8_t>(m_brushColorValues[0] * 255.f),
 				static_cast<std::uint8_t>(m_brushColorValues[1] * 255.f),
-				static_cast<std::uint8_t>(m_brushColorValues[2] * 255.f)
+				static_cast<std::uint8_t>(m_brushColorValues[2] * 255.f),
+				static_cast<std::uint8_t>(m_brushColorValues[3] * 255.f)
+			);
+		}
+	}
+
+	ImGui::End();
+}
+
+void cPaint::DrawOutlineColorPicker()
+{
+	if (!m_showOutlineColorPicker)
+		return;
+
+	ImGui::SetNextWindowPos(ImVec2(256.f, 8.f), ImGuiCond_Appearing);
+
+	constexpr ImGuiWindowFlags windowFlags =
+		ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoSavedSettings;
+
+	if (ImGui::Begin("Outline Colour Wheel", &m_showOutlineColorPicker, windowFlags))
+	{
+		constexpr ImGuiColorEditFlags pickerFlags =
+			ImGuiColorEditFlags_NoInputs |
+			ImGuiColorEditFlags_NoLabel |
+			ImGuiColorEditFlags_NoSidePreview |
+			ImGuiColorEditFlags_NoSmallPreview |
+			ImGuiColorEditFlags_PickerHueWheel |
+			ImGuiColorEditFlags_AlphaBar;
+
+		if (ImGui::ColorPicker4("##OutlineColour", m_outlineColorValues, pickerFlags))
+		{
+			m_outlineColor = sf::Color(
+				static_cast<std::uint8_t>(m_outlineColorValues[0] * 255.f),
+				static_cast<std::uint8_t>(m_outlineColorValues[1] * 255.f),
+				static_cast<std::uint8_t>(m_outlineColorValues[2] * 255.f),
+				static_cast<std::uint8_t>(m_outlineColorValues[3] * 255.f)
 			);
 		}
 	}
@@ -679,8 +736,14 @@ void cPaint::SubmitTextValue()
 	if (m_activeButton == &m_lineButton)
 		m_brushRadius = m_activeTextBox->GetValue();
 
+	if (m_activeButton == &m_boxFillButton)
+		m_boxOutlineThickness = m_activeTextBox->GetValue();
+
 	if (m_activeButton == &m_ellipseFillButton)
-		m_pointCount = static_cast<size_t>(m_activeTextBox->GetValue());
+		m_ellipseOutlineThickness = m_activeTextBox->GetValue();
+
+	if (m_activeButton == &m_polygonButton)
+		m_polygonOutlineThickness = m_activeTextBox->GetValue();
 	
 	m_activeTextBox = nullptr;
 }
@@ -704,7 +767,10 @@ void cPaint::FinishPolygon()
 	}
 
 	m_polygonVertex.append({ m_polygonPoints.front(), m_brushColor });
+	
 	m_polygon.setFillColor(m_brushColor);
+	m_polygon.setOutlineThickness(m_polygonOutlineThickness);
+	m_polygon.setOutlineColor(m_outlineColor);
 
 	m_canvas.draw(m_polygonVertex);
 	m_canvas.draw(m_polygon);
@@ -748,6 +814,9 @@ void cPaint::UseBoxFillTool()
 		boxFill->setPosition(m_startDrawPosition);
 		boxFill->setSize(boxWidth);
 		boxFill->setFillColor(m_brushColor);
+
+		boxFill->setOutlineThickness(m_boxOutlineThickness);
+		boxFill->setOutlineColor(m_outlineColor);
 	}
 }
 
@@ -771,6 +840,9 @@ void cPaint::UseEllipseFillTool()
 		ellipseFill->setPosition(topLeft);
 		ellipseFill->setRadius(size / 2.f);
 		ellipseFill->setFillColor(m_brushColor);
+
+		ellipseFill->setOutlineThickness(m_ellipseOutlineThickness);
+		ellipseFill->setOutlineColor(m_outlineColor);
 	}
 }
 
@@ -795,9 +867,11 @@ void cPaint::UsePolygonTool()
 	}
 }
 
-void cPaint::LoadStampImage(const std::filesystem::path& filePath)
+void cPaint::LoadStampImage()
 {
-	if (!m_stampImage.loadFromFile(filePath))
+	m_fileInterface.LoadPath(&m_canvas, m_stampImage);
+
+	if (m_stampImage.getSize() == sf::Vector2u({0, 0}))
 	{
 		m_hasStampImage = false;
 		return;
@@ -819,7 +893,7 @@ void cPaint::PlaceStamp()
 
 	sf::Sprite stampSprite(m_stampImage);
 
-	const sf::Vector2u imageSize = m_stampImage.getSize();
+	const sf::Vector2 imageSize = m_stampImage.getSize();
 
 	const sf::Vector2f scaledSize{
 		static_cast<float>(imageSize.x) * m_stampScale,

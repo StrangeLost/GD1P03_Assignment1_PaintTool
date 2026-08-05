@@ -16,6 +16,7 @@ Mail : rony.song@mds.ac.nz
 #include "imgui-SFML.h"
 #include "cButton.h"
 #include "cTextBox.h"
+#include "cFileInterface.h"
 #include "EllipseShape.h"
 
 class cPaint
@@ -47,7 +48,8 @@ private:
 	// Draws handling
 	void DrawButtons();
 	void DrawTextBoxes();
-	void DrawColorPicker();
+	void DrawBrushColorPicker();
+	void DrawOutlineColorPicker();
 
 	// Helper Functions
 	void SwitchTool(cButton& toolButton);
@@ -64,7 +66,7 @@ private:
 	void UsePolygonTool();
 
 	// Use Stamp Tool
-	void LoadStampImage(const std::filesystem::path& filePath);
+	void LoadStampImage();
 	void PlaceStamp();
 
 	// Save & Load images
@@ -86,12 +88,20 @@ private:
 	// Drawing Brush
 	bool m_isDrawing = false;
 	float m_brushRadius = 8.f;
-	size_t m_pointCount = 32;
+	size_t m_pointCount = 64;
 	sf::Shape* m_brushShape;
 	sf::Vector2f m_startDrawPosition;
 	sf::Color m_brushColor = sf::Color::Black;
-	float m_brushColorValues[3] = { 0.f, 0.f, 0.f };
-	bool m_showColorPicker = false;
+	float m_brushColorValues[4] = { 0.f, 0.f, 0.f, 1.f };
+	bool m_showBrushColorPicker = false;
+
+	// Brush Outlines
+	float m_boxOutlineThickness;
+	float m_ellipseOutlineThickness;
+	float m_polygonOutlineThickness;
+	sf::Color m_outlineColor = sf::Color::Red;
+	float m_outlineColorValues[4] = { 0.f, 0.f, 0.f, 1.f };
+	bool m_showOutlineColorPicker = false;
 	
 	// Polygon specific
 	bool m_isPolygoning = false;
@@ -118,7 +128,9 @@ private:
 	sf::Texture m_ellipseFillTexture;
 	sf::Texture m_polygonTexture;
 	sf::Texture m_stampTexture;
-	sf::Texture m_colorTexture;
+	sf::Texture m_color1Texture;
+	sf::Texture m_color2Texture;
+	sf::Texture m_clearTexture;
 	sf::Texture m_saveTexture;
 	sf::Texture m_loadTexture;
 
@@ -130,7 +142,9 @@ private:
 	cButton m_ellipseFillButton;
 	cButton m_polygonButton;
 	cButton m_stampButton;
-	cButton m_colorButton;
+	cButton m_color1Button;
+	cButton m_color2Button;
+	cButton m_clearButton;
 	cButton m_saveButton;
 	cButton m_loadButton;
 
@@ -139,5 +153,8 @@ private:
 	std::vector<cTextBox*> m_textBoxes;
 	cTextBox* m_activeTextBox;
 	cTextBox m_brushTextBox;
+
+	// File SAVE & ALOAD
+	cFileInterface m_fileInterface;
 };
 
