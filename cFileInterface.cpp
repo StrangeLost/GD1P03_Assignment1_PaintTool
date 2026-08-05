@@ -1,3 +1,15 @@
+/***********************************************************************
+Bachelor of Software Engineering
+Media Design School
+Auckland
+New Zealand
+(c) 2026 Media Design School
+File Name : cFileInterface.cpp
+Description : Implementation of cFileInterface.h
+Author : Rony Day Song
+Mail : rony.song@mds.ac.nz
+**************************************************************************/
+
 #include <filesystem>
 #include <optional>
 #include "cFileInterface.h"
